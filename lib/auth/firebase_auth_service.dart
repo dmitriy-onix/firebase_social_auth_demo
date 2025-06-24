@@ -56,6 +56,14 @@ class FirebaseAuthService {
     }
   }
 
+  Future<void> signOut() async{
+    try {
+      await _auth.signOut();
+    } catch (e, s) {
+      logger.crash(error: e, stackTrace: s, reason: 'Firebase signOut');
+    }
+  }
+
   Future<Result<OperationStatus>> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);

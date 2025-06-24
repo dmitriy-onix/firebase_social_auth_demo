@@ -41,6 +41,15 @@ class GoogleAuthService implements BaseAuthService {
         'Google sign-in failed with PlatformException: ${e.code}',
         error: e,
       );
+      if(e.code == 'network_error') {
+        return Result.error(
+          error: SocialAuthFailure(
+            SocialAuthFailureType.networkError,
+            message: 'A network error occurred during Google sign-in.',
+            originalException: e,
+          ),
+        );
+      }
       return Result.error(
         error: SocialAuthFailure(
           SocialAuthFailureType.unknown,
