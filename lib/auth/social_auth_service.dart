@@ -59,9 +59,10 @@ class SocialAuthService {
         if (method != null) {
           final service = _factory.getAuthService(method);
           await service.signOut();
+          await _authMethodRepository.clearAuthMethod();
+        } else {
+          await _firebaseAuth.signOut();
         }
-        await _firebaseAuth.signOut();
-        await _authMethodRepository.clearAuthMethod();
       }
     } catch (e, s) {
       logger.crash(error: e, stackTrace: s, reason: 'Social signOut');
