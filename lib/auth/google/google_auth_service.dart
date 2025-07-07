@@ -7,16 +7,26 @@ import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class GoogleAuthService implements BaseAuthService {
-  final _googleSignIn = GoogleSignIn();
-  final _firebaseAuth = FirebaseAuth.instance;
-
   @override
   Future<Result<UserCredential>> signIn() async {
     try {
-      final googleSignInAccount = await _googleSignIn.signIn();
+      await GoogleSignIn.instance.initialize();
 
-      if (googleSignInAccount == null) {
-        // User cancelled the sign-in flow.
+      GoogleSignIn.instance.signOut();
+      final GoogleSignInAccount googleUser =
+          await GoogleSignIn.instance.authenticate();
+      final googleAuth = googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+      return Result.ok(userCredential);
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
         return Result.error(
           error: SocialAuthFailure(
             SocialAuthFailureType.cancelled,
@@ -25,23 +35,28 @@ class GoogleAuthService implements BaseAuthService {
         );
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleSignInAccount.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+      if (e.code == GoogleSignInExceptionCode.interrupted) {
+        return Result.error(
+          error: SocialAuthFailure(
+            SocialAuthFailureType.cancelled,
+            message: 'Google sign-in was cancelled by the user.',
+          ),
+        );
+      }
 
-      final userCredential = await _firebaseAuth.signInWithCredential(
-        credential,
+      return Result.error(
+        error: SocialAuthFailure(
+          SocialAuthFailureType.unknown,
+          message: 'An unknown error occurred during Google sign-in.',
+          originalException: e,
+        ),
       );
-      return Result.ok(userCredential);
     } on PlatformException catch (e) {
       logger.e(
         'Google sign-in failed with PlatformException: ${e.code}',
         error: e,
       );
-      if(e.code == 'network_error') {
+      if (e.code == 'network_error') {
         return Result.error(
           error: SocialAuthFailure(
             SocialAuthFailureType.networkError,
@@ -89,8 +104,8 @@ class GoogleAuthService implements BaseAuthService {
   @override
   Future<void> signOut() async {
     try {
-      await _googleSignIn.signOut();
-      await _firebaseAuth.signOut();
+      await GoogleSignIn.instance.signOut();
+      await FirebaseAuth.instance.signOut();
     } catch (e, s) {
       logger.crash(error: e, stackTrace: s, reason: 'Google signOut');
     }
