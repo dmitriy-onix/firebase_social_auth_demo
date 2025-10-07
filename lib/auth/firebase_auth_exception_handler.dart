@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_social_auth_demo/arch/logger/app_logger_impl.dart';
+import 'package:firebase_social_auth_demo/auth/firebase_const.dart';
 import 'package:firebase_social_auth_demo/domain/entity/exceptions/firebase_auth_failure.dart';
 
 class FirebaseAuthExceptionHandler {
@@ -55,39 +56,39 @@ class FirebaseAuthExceptionHandler {
   }
 
   static FirebaseAuthFailureType _mapExceptionToFailure(
-      FirebaseAuthException e,) {
+    FirebaseAuthException e,
+  ) {
     switch (e.code) {
-      case 'invalid-email':
+      case FirebaseConst.errInvalidEmail:
         return FirebaseAuthFailureType.invalidEmail;
-      case 'wrong-password':
+      case FirebaseConst.errWrongPassword:
         return FirebaseAuthFailureType.wrongPassword;
-      case 'weak-password':
+      case FirebaseConst.errWeakPassword:
         return FirebaseAuthFailureType.weakPassword;
-      case 'email-already-in-use':
+      case FirebaseConst.errEmailAlreadyInUse:
         return FirebaseAuthFailureType.emailAlreadyExists;
-      case 'requires-recent-login':
+      case FirebaseConst.errRequiresRecentLogin:
         return FirebaseAuthFailureType.requiresRecentLogin;
-      case 'user-not-found':
+      case FirebaseConst.errUserNotFound:
         return FirebaseAuthFailureType.userNotFound;
-      case 'user-disabled':
+      case FirebaseConst.errUserDisabled:
         return FirebaseAuthFailureType.userDisabled;
-      case 'too-many-requests':
+      case FirebaseConst.errTooManyRequests:
         return FirebaseAuthFailureType.tooManyRequests;
-      case 'network-request-failed':
+      case FirebaseConst.errNetworkRequestFailed:
         return FirebaseAuthFailureType.networkRequestFailed;
-      case 'account-exists-with-different-credential':
+      case FirebaseConst.errAccountExistsWithDifferentCredential:
         return FirebaseAuthFailureType.accountExistsWithDifferentCredential;
-      case 'invalid-credential':
+      case FirebaseConst.errInvalidCredential:
         return FirebaseAuthFailureType.invalidCredential;
-      case 'operation-not-allowed':
+      case FirebaseConst.errOperationNotAllowed:
         return FirebaseAuthFailureType.operationNotAllowed;
-      case 'profile-not-found':
+      case FirebaseConst.errProfileNotFound:
         return FirebaseAuthFailureType.profileNotFound;
-      case 'logout-failed':
+      case FirebaseConst.errLogoutFailed:
         return FirebaseAuthFailureType.logoutFailed;
       default:
         return FirebaseAuthFailureType.unknown;
     }
   }
 }
-
