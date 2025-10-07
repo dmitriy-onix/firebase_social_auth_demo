@@ -45,12 +45,17 @@ class FirebaseAuthExceptionHandler {
         return 'The credential received is malformed or has expired.';
       case FirebaseAuthFailureType.unknown:
         return 'An unexpected error occurred. Please try again.';
+      case FirebaseAuthFailureType.operationNotAllowed:
+        return 'Check is email authorization enabled on your Firebase account.';
+      case FirebaseAuthFailureType.profileNotFound:
+        return "Can't fetch User Profile.";
+      case FirebaseAuthFailureType.logoutFailed:
+        return 'Log Out failed.';
     }
   }
 
   static FirebaseAuthFailureType _mapExceptionToFailure(
-    FirebaseAuthException e,
-  ) {
+      FirebaseAuthException e,) {
     switch (e.code) {
       case 'invalid-email':
         return FirebaseAuthFailureType.invalidEmail;
@@ -74,8 +79,15 @@ class FirebaseAuthExceptionHandler {
         return FirebaseAuthFailureType.accountExistsWithDifferentCredential;
       case 'invalid-credential':
         return FirebaseAuthFailureType.invalidCredential;
+      case 'operation-not-allowed':
+        return FirebaseAuthFailureType.operationNotAllowed;
+      case 'profile-not-found':
+        return FirebaseAuthFailureType.profileNotFound;
+      case 'logout-failed':
+        return FirebaseAuthFailureType.logoutFailed;
       default:
         return FirebaseAuthFailureType.unknown;
     }
   }
 }
+

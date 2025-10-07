@@ -22,5 +22,8 @@ enum FirebaseAuthFailureType {
   networkRequestFailed,
   accountExistsWithDifferentCredential,
   invalidCredential,
+  operationNotAllowed,
+  profileNotFound,
+  logoutFailed,
   unknown,
 }
