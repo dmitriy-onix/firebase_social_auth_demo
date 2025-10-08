@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_social_auth_demo/arch/logger/app_logger_impl.dart';
-import 'package:firebase_social_auth_demo/auth/firebase_const.dart';
+import 'package:firebase_social_auth_demo/data/source/remote/firebase/firebase_const.dart';
 import 'package:firebase_social_auth_demo/domain/entity/exceptions/firebase_auth_failure.dart';
 
 class FirebaseAuthExceptionHandler {

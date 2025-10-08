@@ -13,10 +13,10 @@ class SocialAuthService {
 
   SocialAuthService({
     required AuthMethodRepository authMethodRepository,
+    required FirebaseAuth firebaseAuth,
     AuthServiceFactory? factory,
-    FirebaseAuth? firebaseAuth,
-  }) : _factory = factory ?? AuthServiceFactory(),
-       _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+  }) : _factory = factory ?? AuthServiceFactory(firebaseAuth),
+       _firebaseAuth = firebaseAuth,
        _authMethodRepository = authMethodRepository;
 
   Future<Result<String>> signIn(SocialAuthMethod method) async {

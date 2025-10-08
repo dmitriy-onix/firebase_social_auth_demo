@@ -7,12 +7,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_social_auth_demo/arch/domain/entity/common/result.dart';
 import 'package:firebase_social_auth_demo/arch/logger/app_logger_impl.dart';
 import 'package:firebase_social_auth_demo/auth/base_auth_service.dart';
-import 'package:firebase_social_auth_demo/domain/entity/exceptions/social_auth_failure.dart';
+import 'package:firebase_social_auth_demo/auth/facebook/facebook_auth_exception_handler.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class FacebookAuthService implements BaseAuthService {
-  final _facebookAuth = FacebookAuth.instance;
-  final _firebaseAuth = FirebaseAuth.instance;
+  final FacebookAuth _facebookAuth;
+
+  final FirebaseAuth _firebaseAuth;
+
+  FacebookAuthService(this._firebaseAuth, [FacebookAuth? facebookAuth])
+    : _facebookAuth = facebookAuth ?? FacebookAuth.instance;
 
   @override
   Future<Result<UserCredential>> signIn() async {
@@ -27,49 +31,18 @@ class FacebookAuthService implements BaseAuthService {
 
       switch (result.status) {
         case LoginStatus.success:
-          final accessToken = result.accessToken;
-          if (accessToken == null) {
-            return Result.error(
-              error: SocialAuthFailure(
-                SocialAuthFailureType.unknown,
-                message: 'Facebook login succeeded but access token was null.',
-              ),
-            );
-          }
-          final OAuthCredential credential;
-          if (Platform.isAndroid) {
-            credential = FacebookAuthProvider.credential(
-              accessToken.tokenString,
-            );
-          } else {
-            credential = OAuthProvider(
-              'facebook.com',
-            ).credential(idToken: accessToken.tokenString, rawNonce: rawNonce);
-          }
-          final userCredential = await _firebaseAuth.signInWithCredential(
-            credential,
-          );
-          return Result.ok(userCredential);
+          return _handleLoginSuccess(result, rawNonce);
         case LoginStatus.cancelled:
           return Result.error(
-            error: SocialAuthFailure(
-              SocialAuthFailureType.cancelled,
-              message: 'Facebook sign-in was cancelled by the user.',
-            ),
+            error: FacebookAuthExceptionHandler.handleCanceled(),
           );
         case LoginStatus.failed:
           return Result.error(
-            error: SocialAuthFailure(
-              SocialAuthFailureType.unknown,
-              message: result.message ?? 'Facebook sign-in failed.',
-            ),
+            error: FacebookAuthExceptionHandler.handleFailed(result),
           );
         case LoginStatus.operationInProgress:
           return Result.error(
-            error: SocialAuthFailure(
-              SocialAuthFailureType.unknown,
-              message: 'A Facebook sign-in operation is already in progress.',
-            ),
+            error: FacebookAuthExceptionHandler.handleOperationInProgress(),
           );
       }
     } on FirebaseAuthException catch (e) {
@@ -77,26 +50,14 @@ class FacebookAuthService implements BaseAuthService {
         'Facebook sign-in failed with FirebaseAuthException: ${e.code}',
         error: e,
       );
-      final type =
-          e.code == 'account-exists-with-different-credential'
-              ? SocialAuthFailureType.accountExistsWithDifferentCredential
-              : SocialAuthFailureType.unknown;
-
       return Result.error(
-        error: SocialAuthFailure(
-          type,
-          message: e.message ?? 'A Firebase error occurred.',
-          originalException: e,
-        ),
+        error: FacebookAuthExceptionHandler.handleFirebaseAuthException(e),
       );
     } catch (e, s) {
       logger.crash(error: e, stackTrace: s, reason: 'Facebook signIn');
+
       return Result.error(
-        error: SocialAuthFailure(
-          SocialAuthFailureType.unknown,
-          message: 'An unknown error occurred during Facebook sign-in.',
-          originalException: e,
-        ),
+        error: FacebookAuthExceptionHandler.handleUnknownException(e),
       );
     }
   }
@@ -128,5 +89,27 @@ class FacebookAuthService implements BaseAuthService {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+
+  Future<Result<UserCredential>> _handleLoginSuccess(
+    LoginResult result,
+    String? rawNonce,
+  ) async {
+    final accessToken = result.accessToken;
+    if (accessToken == null) {
+      return Result.error(
+        error: FacebookAuthExceptionHandler.handleNullAccessToken(),
+      );
+    }
+    final OAuthCredential credential;
+    if (Platform.isAndroid) {
+      credential = FacebookAuthProvider.credential(accessToken.tokenString);
+    } else {
+      credential = OAuthProvider(
+        'facebook.com',
+      ).credential(idToken: accessToken.tokenString, rawNonce: rawNonce);
+    }
+    final userCredential = await _firebaseAuth.signInWithCredential(credential);
+    return Result.ok(userCredential);
   }
 }

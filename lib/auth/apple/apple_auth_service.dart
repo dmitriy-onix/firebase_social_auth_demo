@@ -5,12 +5,14 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_social_auth_demo/arch/domain/entity/common/result.dart';
 import 'package:firebase_social_auth_demo/arch/logger/app_logger_impl.dart';
+import 'package:firebase_social_auth_demo/auth/apple/apple_auth_exception_handler.dart';
 import 'package:firebase_social_auth_demo/auth/base_auth_service.dart';
-import 'package:firebase_social_auth_demo/domain/entity/exceptions/social_auth_failure.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AppleAuthService implements BaseAuthService {
-  final _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseAuth _firebaseAuth;
+
+  AppleAuthService(this._firebaseAuth);
 
   @override
   Future<Result<UserCredential>> signIn() async {
@@ -41,49 +43,28 @@ class AppleAuthService implements BaseAuthService {
       );
       return Result.ok(userCredential);
     } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) {
-        return Result.error(
-          error: SocialAuthFailure(
-            SocialAuthFailureType.cancelled,
-            message: 'Apple sign-in was cancelled by the user.',
-          ),
-        );
-      }
       logger.e(
         'Apple sign-in failed with AuthorizationException: ${e.code}',
         error: e,
       );
+
       return Result.error(
-        error: SocialAuthFailure(
-          SocialAuthFailureType.unknown,
-          message: 'An error occurred during Apple sign-in.',
-          originalException: e,
-        ),
+        error: AppleAuthExceptionHandler.handleAuthorizationException(e),
       );
     } on FirebaseAuthException catch (e) {
       logger.e(
         'Apple sign-in failed with FirebaseAuthException: ${e.code}',
         error: e,
       );
-      final type =
-          e.code == 'account-exists-with-different-credential'
-              ? SocialAuthFailureType.accountExistsWithDifferentCredential
-              : SocialAuthFailureType.unknown;
+
       return Result.error(
-        error: SocialAuthFailure(
-          type,
-          message: e.message ?? 'A Firebase error occurred.',
-          originalException: e,
-        ),
+        error: AppleAuthExceptionHandler.handleFirebaseAuthException(e),
       );
     } catch (e, s) {
       logger.crash(error: e, stackTrace: s, reason: 'Apple signIn');
+
       return Result.error(
-        error: SocialAuthFailure(
-          SocialAuthFailureType.unknown,
-          message: 'An unknown error occurred during Apple sign-in.',
-          originalException: e,
-        ),
+        error: AppleAuthExceptionHandler.handleUnknownException(e),
       );
     }
   }
